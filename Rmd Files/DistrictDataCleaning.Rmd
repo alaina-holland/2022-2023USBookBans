@@ -1,0 +1,112 @@
+---
+title: "District Data Cleaning"
+author: "Jordyn Irwin"
+date: "2023-10-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+districtds=read_csv("District LEA Characteristics.csv")
+```
+
+```{r}
+districtds=districtds %>%
+  select(LEA_STATE, LEA_STATE_NAME, LEAID, LEA_NAME, LEA_ENR, LEA_CRCOORD_SEX_IND, LEA_CRCOORD_RAC_IND, LEA_CRCOORD_DIS_IND,LEA_DESEGPLAN, LEA_HBPOLICY_IND)
+```
+
+```{r}
+districtds=districtds %>%
+  mutate(LEA_STATE=factor(LEA_STATE),
+         LEA_STATE_NAME=factor(LEA_STATE_NAME),
+         LEAID=factor(LEAID),
+         LEA_NAME=factor(LEA_NAME),
+         LEA_CRCOORD_SEX_IND=factor(LEA_CRCOORD_SEX_IND),
+         LEA_CRCOORD_RAC_IND=factor(LEA_CRCOORD_RAC_IND),
+         LEA_CRCOORD_DIS_IND=factor(LEA_CRCOORD_DIS_IND),
+         LEA_DESEGPLAN=factor(LEA_DESEGPLAN),
+         LEA_HBPOLICY_IND=factor(LEA_HBPOLICY_IND))
+```
+
+```{r}
+DistHB=read_csv("DistHarassment and Bullying.csv")
+```
+
+```{r}
+DistHB=DistHB %>%
+  mutate(LEA_STATE=factor(LEA_STATE),
+         LEA_STATE_NAME=factor(LEA_STATE_NAME),
+         LEAID=factor(LEAID),
+         LEA_NAME=factor(LEA_NAME))
+
+```
+
+```{r}
+names(DistHB)
+DistHB=DistHB %>%
+  select(LEAID,SCH_HBALLEGATIONS_SEX,SCH_HBALLEGATIONS_RAC,SCH_HBALLEGATIONS_DIS,SCH_HBALLEGATIONS_ORI,SCH_HBALLEGATIONS_REL)
+DistHB=DistHB %>%
+group_by(LEAID) %>%
+  summarise(sumHBALLEGATIONS_SEX=sum(SCH_HBALLEGATIONS_SEX),
+            sumHBALLEGATIONS_RAC=sum(SCH_HBALLEGATIONS_RAC),
+            sumHBALLEGATIONS_DIS=sum(SCH_HBALLEGATIONS_DIS),
+            sumHBALLEGATIONS_ORI=sum(SCH_HBALLEGATIONS_ORI),
+            sumHBALLEGATIONS_REL=sum(SCH_HBALLEGATIONS_REL))
+  
+```
+
+```{r}
+distds2=full_join(districtds,DistHB,by=c("LEAID"="LEAID"))
+```
+
+```{r}
+distBans=read_csv("DistrictBookBans.csv")
+```
+
+```{r}
+distBans=distBans %>%
+  rename(banCount=`Ban Count by District`)
+distBans=distBans %>%
+  rename(SchoolDistID=`SchoolDistrict ID`)
+
+distBans=distBans %>%
+  mutate(SchoolDistID=factor(SchoolDistID))
+
+distBans=distBans %>%
+  select(SchoolDistID,banCount)
+```
+
+```{r}
+districtds3=full_join(distBans,distds2, by=c("SchoolDistID"="LEAID"))
+```
+
+```{r}
+districtds3=districtds3[,c(3,4,5,1,6,2,7,8,9,10,11,12,13,14,15,16)]
+```
+
+```{r}
+districtds3=districtds3 %>%
+  mutate(banCount=replace_na(banCount,0))
+```
+
+```{r}
+districtds3=districtds3 %>%
+  rename(StateAbbr=LEA_STATE,State=LEA_STATE_NAME,SchoolDistName=LEA_NAME,SchoolDistEnrollment=LEA_ENR)
+```
+
+
+
+
+```{r}
+write_csv(districtds3,"School District Book Bans and CRDC Data.csv")
+```
+
+
+
+
+

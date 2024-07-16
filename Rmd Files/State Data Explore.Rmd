@@ -1,0 +1,145 @@
+---
+title: "State Data Explore"
+author: "Jordyn Irwin"
+date: "2023-10-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+library(tidyverse)
+statebans=read_csv("State Book Bans and CRDC Data.csv")
+statebans=statebans %>%
+  mutate(State=factor(State),
+         BookBans=factor(BookBans))
+
+```
+
+```{r}
+stateds3$PercRaceAllegations=as.numeric((stateds3$sumHBALLEGATIONS_RAC/stateds3$StateEnrollment)*100)
+statebans$BookBans=ifelse(statebans$BanCount > 0,"Yes","No")
+
+statebans=statebans %>%
+  rowwise() %>%
+  mutate(Allegations= sum(c(sumHBALLEGATIONS_SEX,sumHBALLEGATIONS_RAC,sumHBALLEGATIONS_DIS,sumHBALLEGATIONS_ORI,sumHBALLEGATIONS_REL)))
+
+statebans=statebans %>%
+  select(-perCapita)
+
+statebans=statebans %>%
+  rowwise() %>%
+  mutate(perCapita=as.numeric(Allegations/StateEnrollment)*10000)
+
+
+```
+
+
+
+```{r}
+ggplot(statebans, aes(x=reorder(State,perCapita),y=perCapita,fill=BookBans))+
+  geom_col()+
+  coord_flip()
+  
+```
+
+```{r}
+elections=read_csv("State Book Bans and CRDC Data copy.csv")
+```
+
+```{r}
+elections=elections %>%
+  select(State,ElectionWinner2020,VotePercentage)
+
+elections=elections %>%
+  mutate(State=factor(State),
+         ElectionWinner2020=factor(ElectionWinner2020))
+```
+
+
+```{r}
+electbansds=full_join(elections,statebans,by=c("State"="State"))
+```
+
+```{r}
+electbansds %>%
+  ggplot(aes(VotePercentage,perCapita, color=ElectionWinner2020))+
+  geom_point()+
+  facet_wrap(vars(BookBans))
+```
+
+```{r}
+electbansds %>%
+  ggplot(aes(ElectionWinner2020,perCapita, fill=BookBans))+
+  geom_col()+
+  labs(y="2017-18 Harrassment Allegations per 10,000 Students", x="2020 State Election Results")
+```
+
+
+```{r}
+electbansds %>%
+  filter(BookBans=="Yes") %>%
+  ggplot(aes(x=reorder(State,perCapita),y=perCapita, fill=ElectionWinner2020))+
+  geom_col()+
+  coord_flip()
+```
+
+```{r}
+longds=electbansds %>%
+  pivot_longer(cols = 6:10, names_to = "Type", values_to = "CountOfAllegations")
+
+longds=longds %>%
+  mutate(Type=factor(Type))
+
+```
+
+```{r}
+##the data for each allegation type might need to be calculated at the per capita rate to be more accurate? 
+
+longds %>%
+  ggplot(aes(BookBans,CountOfAllegations, fill=BookBans))+
+  geom_col()+
+  facet_wrap(vars(Type))
+```
+
+```{r}
+longds=longds %>%
+  rowwise() %>%
+  mutate(per10000=as.numeric(CountOfAllegations/StateEnrollment)*10000)
+```
+
+```{r}
+##woo still the same basically!
+longds %>%
+  ggplot(aes(BookBans,per10000, fill=BookBans))+
+  geom_col()+
+  facet_wrap(vars(Type))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

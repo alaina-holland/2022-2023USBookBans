@@ -1,0 +1,40 @@
+---
+title: "potential viz"
+author: "Alaina Holland"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+library(ggplot2)
+library(dplyr)
+```
+``` {r}
+setwd("/Users/alainaholland/Desktop/DataVizGroupProject")
+ds<- read_csv("State Book Bans Dataset 10.21.2023.csv")
+```
+```{r}
+#summary(ds)
+ds %>%
+  mutate(State =  as.factor(State),
+         Administrator = as.factor(Administrator),
+         `Formal Challenge`= as.factor('Formal Challenge'),
+         Other = as.factor(Other),
+         `Banned in Libraries and Classrooms` = as.factor(`Banned in Libraries and Classrooms`),
+         `Banned Pending Investigation` = as.factor(`Banned Pending Investigation`),
+         `Banned in Libraries` = as.factor(`Banned in Libraries`),
+         `Banned in Classrooms` = as.factor(`Banned in Classrooms`),
+         StudentEnrollment = as.numeric(StudentEnrollment),
+         HB_Alleg_Sex = as.numeric(HB_Alleg_Sex),
+         HB_Alleg_Race = as.numeric(HB_Alleg_Race),
+         HB_Alleg_Disability=as.numeric(HB_Alleg_Disability),
+         HB_Alleg_Orientation = as.numeric(HB_Alleg_Orientation),
+         HB_Alleg_Religion = as.numeric(HB_Alleg_Religion)
+         )
+```
+
+
+

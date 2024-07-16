@@ -1,0 +1,117 @@
+---
+title: "a_holland_School District Book Bans and CRDC Data"
+author: "Alaina Holland"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+### Libraries
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+```
+### Load the files and set the working directory
+```{r}
+setwd("/Users/alainaholland/Desktop/DataVizGroupProject")
+
+dv_bb = read_csv("/Users/alainaholland/Desktop/DataVizGroupProject/School District Book Bans and CRDC Data.csv")
+```
+
+#Extract Schema
+```{r}
+schema <- data.frame(
+  ColumnName = names(dv_bb2),
+  DataType = sapply(dv_bb2, class),
+  Min = sapply(dv_bb, function(x) if (is.numeric(x)) min(x) else NA),
+  Max = sapply(dv_bb, function(x) if (is.numeric(x)) max(x) else NA),
+  Mean = sapply(dv_bb, function(x) if (is.numeric(x)) mean(x, na.rm = TRUE) else NA),
+  UniqueValues = sapply(dv_bb, function(x) if (is.factor(x)) length(levels(x)) else NA)
+)
+
+# Print the schema
+print(schemab)
+
+csv_file_path <- "schemab.csv"
+
+# Write the schema data to a CSV file
+write.csv(schema1, file = csv_file_path, row.names = FALSE)
+```
+### Change data type
+
+``` {r}
+dv_bb %>%
+  #change data types
+  mutate(
+    StateAbbr = as.factor(StateAbbr),
+    State = as.factor(State),
+    SchoolDistID = as.factor(SchoolDistID),
+    LEA_CRCOORD_SEX_IND = as.factor(LEA_CRCOORD_SEX_IND),
+    LEA_CRCOORD_DIS_IND = as.factor(LEA_CRCOORD_DIS_IND),
+    LEA_CRCOORD_RAC_IND = as.factor(LEA_CRCOORD_RAC_IND)
+    ) 
+```
+
+### Potential Viz 1
+```{r}
+dv_bb %>%
+  group_by(State) %>%
+  summarize(TotalBanCount = sum(banCount))%>%
+  arrange(TotalBanCount) %>%
+  head(10) %>%
+  ggplot(aes(x=reorder(State,TotalBanCount), y=TotalBanCount)) +
+  geom_col()
+```
+
+### Potential Viz 2
+```{r}
+dv_bb %>%
+  group_by(State) %>%
+  summarize(TotalBanCount = sum(banCount))%>%
+  top_n(10, TotalBanCount) %>%
+  arrange(TotalBanCount) %>%
+  ggplot(aes(x=reorder(State,TotalBanCount), y=TotalBanCount)) +
+  geom_col()
+```
+
+### Potential Viz 3
+```{r}
+dv_bb %>%
+  filter(State == 'TEXAS') %>%
+  group_by(SchoolDistName) %>%
+  summarize(TotalBanCount = sum(banCount))%>%
+  top_n(5, TotalBanCount) %>%
+  arrange(TotalBanCount) %>%
+  ggplot(aes(x=reorder(SchoolDistName,TotalBanCount), y=TotalBanCount)) +
+  geom_col()
+```
+
+### Potential Viz 4
+```{r}
+dv_bb %>%
+  filter(State == 'TEXAS') %>%
+  group_by(SchoolDistName) %>%
+  summarize(TotalBanCount = sum(banCount)) %>%
+  top_n(5, TotalBanCount) %>%
+  arrange(desc(TotalBanCount)) %>%
+  ggplot(aes(x = reorder(SchoolDistName, -TotalBanCount), y = TotalBanCount)) +
+  geom_col()
+```
+
+### Potential Viz 5
+```{r}
+
+```
+
+### Potential Viz 6
+```{r}
+```
+### Write out dataset
+```{r}
+write.csv(dv_bb, "SchoolDistrictBookBansandCRDCData_2.csv" ,row.names=FALSE)
+```

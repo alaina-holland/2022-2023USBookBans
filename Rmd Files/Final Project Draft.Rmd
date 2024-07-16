@@ -1,0 +1,153 @@
+---
+title: "Final Project Draft"
+author: "Jordyn Irwin and Alaina Holland"
+date: "2023-11-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = "/Users/cryptid/Documents/School/Willamette University/MSDS/Data 502/Final Project/Book Bans+CRDC/Project")
+library(tidyverse)
+library(plotly)
+library(sf)
+library(tigris)
+options(tigris_use_cache = TRUE)
+
+```
+
+
+```{r}
+## Maps wrangling
+byYearMaps=read_csv("byYearMaps.csv")
+
+
+byYearMaps=byYearMaps %>%
+  select(-...2)
+
+byYearMaps=byYearMaps %>%
+  mutate(banCount_cut = cut(banCount, breaks = c(1, 250, 500, 750, 1000, 1250, 1500), include.lowest = TRUE))
+
+byYearMaps=byYearMaps %>%
+  arrange(State)
+
+byYearMaps=byYearMaps %>%
+  mutate(banCount_cut = as.character(banCount_cut))
+
+byYearMaps=byYearMaps=byYearMaps %>% 
+     mutate_at('banCount_cut', ~replace_na(.,"[0]"))
+
+byYearMaps=byYearMaps %>%
+  mutate(banCount_cut = as.factor(banCount_cut))
+
+byYearMaps$banCount_cut <- factor(byYearMaps$banCount_cut, levels = c("[0]", "[1,250]", "(250,500]", "(500,750]","(750,1e+03]", "(1.25e+03,1.5e+03]"))
+
+
+byYearMaps$banCount_cut2 <- factor(byYearMaps$banCount_cut, labels = c("0", ">1-250", ">250-500", ">500-750", ">750", ">750"))
+
+
+books2022= byYearMaps %>%
+  filter(Year==2022)
+
+books2023= byYearMaps %>%
+  filter(Year==2023)
+
+```
+
+
+```{r}
+## Maps join
+us_states_outside = states(cb = TRUE, resolution = "20m") %>%
+  shift_geometry(position = "outside")
+
+us_books2022 = geo_join(us_states_outside, books2022, by_sp = "NAME", by_df = "State")
+us_books2023 = geo_join(us_states_outside, books2023, by_sp = "NAME", by_df = "State")
+us_books = geo_join(us_states_outside, byYearMaps, by_sp = "NAME", by_df = "State")
+```
+```{r}
+## Maps plot
+
+map2022=ggplot(data=us_books2022, aes(fill=banCount_cut2))+
+  geom_sf(aes(text = paste0("State: ", NAME, "<br>", "Number of Bans: ", banCount)))+
+  scale_fill_manual(name = "Number of Bans in 2022", values = c("#e8f6f3", "#73c6b6", "#16a085", "#117a65", "#0b5345"))+
+  theme_minimal()+
+  theme(element_blank(), axis.text.x = element_blank(), axis.text.y = element_blank())+
+  labs(title = "Florida rises to the top", subtitle = "Books increase in over the last year", caption = "Data from PEN America's Index of School Book Bans")
+map2023=ggplot(data=us_books2023, aes(fill=banCount_cut2))+
+  geom_sf(aes(text = paste0("State: ", NAME, "<br>", "Number of Bans: ", banCount)))+
+  scale_fill_manual(name = "Number of Bans in 2023", values = c("#e8f6f3", "#73c6b6", "#16a085", "#117a65", "#0b5345"))+
+  theme_minimal()+
+  theme(element_blank(), axis.text.x = element_blank(), axis.text.y = element_blank())+
+  labs(title = "Florida rises to the top", subtitle = "Books increase in over the last year", caption = "Data from PEN America's Index of School Book Bans")
+
+map2022
+map2023
+```
+
+```{r}
+ggplotly(map2022, tooltip = "text") %>%
+  layout(title = list(text = paste0('Florida rises to the top',
+                                    '<br>',
+                                    '<sup>',
+                                    'Books increase in over the last year',
+                                    '</sup>')))
+ggplotly(map2023, tooltip = "text") %>%
+    layout(title = list(text = paste0('Florida rises to the top',
+                                    '<br>',
+                                    '<sup>',
+                                    'Books increase in over the last year',
+                                    '</sup>')))
+```
+
+```{r}
+## Points data
+points=read_csv("byYear2.csv")
+
+points=points %>% 
+  select(-...1)
+
+points=points %>%
+  mutate(Year = as.factor(Year))
+
+```
+
+
+
+```{r}
+##Points Plot
+
+book_plot=ggplot(points, aes(x=banCount, y= reorder(State, banCount)))+
+  geom_point(aes(color=Year), size = 2)+
+  geom_line()+
+  theme_minimal(base_size=11)+
+  theme(panel.grid.major.y = element_blank(), panel.grid.major.x = element_line(color="lightgray"), panel.grid.minor.x = element_blank(), plot.caption = element_text(hjust = 0), text=element_text(family = "Times"))+
+  scale_color_manual(name = "School Year", labels = c("2021-2022", "2022-2023"), values = c("#accea8", "#145a32"))+
+  scale_x_continuous(breaks = c(0,250,500,750,1000,1250,1500), labels = c("0","250","500","750","1000","1250","1500"))+
+  labs(title = "Florida rises to the top", subtitle = "Books increase in over the last year", y = "", x = "Number of Bans", caption = "Data from PEN America's Index of School Book Bans")
+ggsave("finalproject.pdf", height = 12, width = 10)
+
+book_plot
+```
+
+```{r}
+## Interactive
+ggplotly(book_plot) %>%
+    layout(title = list(text = paste0('Florida rises to the top',
+                                    '<br>',
+                                    '<sup>',
+                                    'Books increase in over the last year',
+                                    '</sup>')))
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+

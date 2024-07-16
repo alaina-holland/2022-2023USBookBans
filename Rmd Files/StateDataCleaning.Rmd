@@ -1,0 +1,91 @@
+---
+title: "State Data Cleaning"
+author: "Jordyn Irwin"
+date: "2023-10-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+stateds=read_csv("State LEA Characteristics.csv")
+```
+
+```{r}
+stateds=stateds %>%
+  mutate(LEA_STATE=factor(LEA_STATE),
+         LEA_STATE_NAME=factor(LEA_STATE_NAME),
+         LEAID=factor(LEAID))
+
+
+```
+
+```{r}
+stateds=stateds %>%
+  group_by(LEA_STATE_NAME) %>%
+  summarise(LEA_ENR=sum(LEA_ENR))
+
+unique(stateds)
+```
+
+```{r}
+stateHB=read_csv("StateHarassment and Bullying.csv")
+```
+
+```{r}
+stateHB=stateHB  %>%
+group_by(LEA_STATE_NAME) %>%
+  summarise(sumHBALLEGATIONS_SEX=sum(SCH_HBALLEGATIONS_SEX),
+            sumHBALLEGATIONS_RAC=sum(SCH_HBALLEGATIONS_RAC),
+            sumHBALLEGATIONS_DIS=sum(SCH_HBALLEGATIONS_DIS),
+            sumHBALLEGATIONS_ORI=sum(SCH_HBALLEGATIONS_ORI),
+            sumHBALLEGATIONS_REL=sum(SCH_HBALLEGATIONS_REL))
+```
+
+```{r}
+stateds2=full_join(stateHB,stateds,by=c("LEA_STATE_NAME"="LEA_STATE_NAME"))
+```
+
+
+```{r}
+statebans=read_csv("StateBookBans.csv")
+```
+
+```{r}
+statebans=statebans %>%
+  mutate(State=toupper(State))
+```
+
+```{r}
+stateds3=full_join(statebans,stateds2,by=c("State"="LEA_STATE_NAME"))
+```
+
+```{r}
+stateds3=stateds3 %>%
+  rename(BanCount=`Ban Count by State`)
+```
+
+```{r}
+stateds3=stateds3 %>%
+  mutate(BanCount=replace_na(BanCount,0))
+stateds3=stateds3 %>%
+  rename(StateEnrollment=LEA_ENR)
+stateds3=stateds3[,c(1,8,2,3,4,5,6,7)]
+stateds3=stateds3 %>%
+  mutate(State=factor(State))
+```
+
+```{r}
+write_csv(stateds3,"State Book Bans and CRDC Data.csv")
+```
+
+
+
+
+
+
+

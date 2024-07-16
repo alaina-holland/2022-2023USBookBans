@@ -1,0 +1,427 @@
+---
+title: "Untitled"
+author: "Alaina Holland"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = "/Users/alainaholland/Desktop/DataVizGroupProject/BBDatasets")
+library(tidyverse)
+library(dplyr)
+library(plotly)
+library(sf)
+library(tigris)
+library(colorspace)
+options(tigris_use_cache = TRUE)
+
+```
+# Read CSV
+```{r}
+ds21 = read_csv("BB21_22.csv")
+ds22_0 = read_csv("BB22-23.csv")
+```
+# drop column
+```{r}
+ds22 <- ds22_0 %>% select (-'Series Name')
+```
+# Rename columns
+```{r}
+
+ds21<-ds21 %>%
+  rename(BanType = 'Type of Ban',
+         Origin = 'Origin of Challenge')
+ds22 <- ds22 %>%
+  rename(BanType = 'Ban Status',
+         Origin = 'Origin of Challenge')
+
+```
+# Color
+```{r}
+# hcl_palettes(plot = TRUE)
+```
+# Merge the 2 datasets
+```{r}
+ds <-bind_rows(ds21, ds22)
+```
+# count of book bans by state
+```{r}
+ds21 %>%
+ # group_by(State) %>%
+  summarise(Count_of_Bans = n())
+ ds22 %>%
+ # group_by(State) %>%
+  summarise(Count_of_Bans = n())
+
+ ds %>%
+   group_by(Year) %>%
+   summarise(Count_of_Bans = n()) %>%
+   ggplot(aes(x = Year, y = Count_of_Bans, fill = Year)) +
+   geom_col(width = .6) +
+  theme_minimal(base_size=15)+
+   scale_fill_discrete_sequential("Heat")+
+  theme(
+    text=element_text(family = "Times"), 
+    legend.position = "none") +
+   #geom_text(aes(label = Count_of_Bans), vjust = -0.5, size = 3, family = "Times") +
+
+  labs(
+    title = "Book Bans in 2021-2022 and 2022-2023",
+    x = "", 
+    y = "", 
+    caption = "Data from PEN America")
+```
+# count of book bans by state and allegation
+```{r}
+ds21 %>%
+  group_by(State, BanType) %>%
+  summarise(Count_of_Bans = n())
+ds22 %>%
+  group_by(State, BanType) %>%
+  summarise(Count_of_Bans = n())
+
+  
+```
+# bar chart of allegation
+```{r}
+ds21 %>%
+  group_by(BanType) %>%
+  summarize(BanCount = n())%>%
+  ggplot(aes(x=reorder(BanType, BanCount), y = BanCount, fill = BanType))+
+  geom_col()+
+  theme_minimal(base_size=12)+
+  theme(
+    text=element_text(family = "Times"), 
+    legend.position = "none", 
+#    plot.title = element_text(hjust = -1.5),
+#    plot.subtitle = element_text(hjust = -.5)
+    )+
+  labs(
+    title = "Where were books banned in the United States?",
+    subtitle = "(July 2021 - June 2022)",
+    x = "", 
+    y = "", 
+    caption = "Data from PEN America")+
+  scale_fill_discrete_sequential("Heat")+
+  coord_flip()
+
+ds22%>%
+    group_by(BanType) %>%
+  summarize(BanCount = n())%>%
+  ggplot(aes(x=reorder(BanType, BanCount), y = BanCount, fill = BanType))+
+  geom_col()+
+  theme_minimal(base_size=12)+
+  theme(
+    text=element_text(family = "Times"), 
+    legend.position = "none", 
+  #  plot.title = element_text(hjust = -1.5),
+  #  plot.subtitle = element_text(hjust = -.5)
+    )+
+  labs(
+    title = "Where were books banned in the United States?",
+    subtitle = "(July 2022 - June 2023)",
+    x = "", 
+    y = "", 
+    caption = "Data from PEN America")+
+  scale_fill_discrete_sequential("Heat") +
+  coord_flip()
+
+```
+# Who initiated Book Bans
+```{r}
+ds21 %>%
+    group_by(Origin) %>%
+  summarize(OriginCount = n())%>%
+  ggplot(aes(x=reorder(Origin, OriginCount), y = OriginCount, fill = Origin))+
+  geom_col()+
+  theme_minimal(base_size=12)+
+  theme(
+    text=element_text(family = "Times"), 
+    legend.position = "none", 
+   # plot.title = element_text(hjust = -.25),
+  #  plot.subtitle = element_text(hjust = -.15)
+    )+
+  labs(
+    title = "How Books were Banned in the United States?",
+    subtitle = "(July 2021 - June 2022)",
+    x = "", 
+    y = "", 
+    caption = "Data from PEN America")+
+  scale_fill_discrete_sequential("Heat") +
+  coord_flip()
+
+    ds22%>%
+  group_by(Origin) %>%
+  summarize(OriginCount = n())%>%
+  ggplot(aes(x=reorder(Origin, OriginCount), y = OriginCount, fill = Origin))+
+  geom_col()+
+  theme_minimal(base_size=12)+
+  theme(
+    text=element_text(family = "Times"), 
+    legend.position = "none", 
+  #  plot.title = element_text(hjust = -1),
+  #  plot.subtitle = element_text(hjust = -.5)
+    )+
+  labs(
+    title = "How Books were Banned in the United States?",
+    subtitle = "(July 2022 - June 2023)",
+    x = "", 
+    y = "", 
+    caption = "Data from PEN America")+
+  scale_fill_discrete_sequential("Heat")+
+  coord_flip()
+```
+# Top books banned
+```{r}
+ds21%>%
+  group_by(Title) %>%
+  summarise(occurrences = n()) %>%
+  arrange(desc(occurrences)) %>%
+  head(10) %>%
+  ggplot(aes(x=reorder(Title, occurrences), y = occurrences, fill = Title))+
+  geom_col()+
+  theme_minimal(base_size=12)+
+  theme(
+    text=element_text(family = "Times"), 
+    legend.position = "none", 
+#    plot.title = element_text(hjust = -1),
+ #   plot.subtitle = element_text(hjust = -.5)
+    )+
+  labs(
+    title = "Top 10 Banned Books in the United States",
+    subtitle = "(July 2021 - June 2022)",
+    x = "", 
+    y = "", 
+    caption = "Data from PEN America")+
+  scale_fill_discrete_sequential("Heat")+
+  coord_flip()
+
+ds22%>%
+  group_by(Title) %>%
+  summarise(occurrences = n()) %>%
+  arrange(desc(occurrences)) %>%
+  head(10) %>%
+  ggplot(aes(x=reorder(Title, occurrences), y = occurrences, fill = Title))+
+  geom_col()+
+  theme_minimal(base_size=12)+
+  theme(
+    text=element_text(family = "Times"), 
+    legend.position = "none", 
+  #  plot.title = element_text(hjust = -1),
+ #   plot.subtitle = element_text(hjust = -.5)
+    )+
+  labs(
+    title = "Top 10 Banned Books in the United States",
+    subtitle = "(July 2022 - June 2023)",
+    x = "", 
+    y = "", 
+    caption = "Data from PEN America")+
+  scale_fill_discrete_sequential("Heat")+
+  coord_flip()
+```
+# title banned by state
+```{r}
+ds21 %>%
+  group_by(State, Title) %>%
+  summarise(banCount = n()) %>%
+  arrange(State, desc(banCount)) %>%
+  group_by(State) %>%
+  top_n(1, banCount) 
+```
+
+# Barbell Plot
+```{r}
+  ds %>%
+  group_by( Year,State) %>%
+  arrange(desc(BanType))%>%
+  head(10)%>%
+  summarize(banCount = n()) %>%
+ggplot(aes(x=banCount, y= reorder(State, banCount)))+
+  geom_point(aes(color=Year), size = 2)+
+  geom_line()+
+  theme_minimal(base_size=11)+
+  theme(panel.grid.major.y = element_blank(), panel.grid.major.x = element_line(color="lightgray"), panel.grid.minor.x = element_blank(), plot.caption = element_text(hjust = 0), text=element_text(family = "Times"))+
+  scale_color_manual(name = "School Year", labels = c("2021-2022", "2022-2023"), values = c("#accea8", "#145a32"))+
+  scale_x_continuous(breaks = c(0,250,500,750,1000,1250,1500), labels = c("0","250","500","750","1000","1250","1500"))+
+  labs(title = "Florida rises to the top", subtitle = "Books increase in over the last year", y = "", x = "Number of Bans", caption = "Data from PEN America's Index of School Book Bans")
+ggsave("finalproject.pdf", height = 12, width = 10)
+
+
+```
+```{r}
+# ban Type
+bt<-ds %>%
+  group_by(State,Year, BanType) %>%
+  summarise(Total_Bans = n())
+bt<-bt %>%
+  pivot_wider(
+    id_cols = c(State, Year), 
+    names_from = BanType, 
+    values_from = Total_Bans,
+    values_fill = 0  
+  )
+# title
+title21<-ds21%>%
+  group_by(State,Year ,Title) %>%
+  summarise(Title_Count = n()) %>%
+  group_by(State) %>%
+  filter(Title_Count == max(Title_Count)) %>%
+  slice(1) %>%
+  arrange(Year,State)
+
+title22<- ds22%>%
+    group_by(State,Year ,Title) %>%
+  summarise(Title_Count = n()) %>%
+  group_by(State) %>%
+  filter(Title_Count == max(Title_Count)) %>%
+  slice(1) %>%
+  arrange(Year,State)
+
+title <-bind_rows(title21,title22)
+
+# origin
+origin <- ds %>%
+  group_by(State, Year, Origin) %>%
+  summarise(Total_origin = n())
+
+origin<-origin %>%
+  pivot_wider(
+    id_cols = c(State, Year), 
+    names_from = Origin, 
+    values_from = Total_origin,
+    values_fill = 0  
+  )
+bans<-ds%>%
+  group_by(State,Year) %>%
+  summarise(Total_Bans = n())
+
+# join all together 
+
+
+
+ds2<-left_join(origin, title, by = c("State", "Year")) %>%
+  left_join(., bt, by = c("State", "Year")) %>%
+  left_join(., bans, by = c("State", "Year"))
+```
+# Top 10
+
+```{r}
+points <-ds2 %>%
+  group_by(State, Year) %>%
+ # mutate(banCount = n()) %>%  
+  arrange(State, Year, desc(Total_Bans))
+
+points2=points %>%
+  mutate(Year = as.factor(Year))
+  
+
+points2=points2 %>%
+  filter(!State %in% c("Alabama", "Arizona", "Connecticut", "Delaware", "Hawaii", "Louisiana", "Montana", "Nevada", "New Mexico", "District of Columbia", "Puerto Rico"))
+
+points2=points2 %>%
+  arrange(desc(Total_Bans))
+
+pointsTopTen=points2 %>%
+  filter(State %in% c("Florida", "Texas", "Pennsylvania", "Tennessee", "Missouri", "Utah", "South Carolina", "Virginia", "North Carolina", "Oklahoma"))
+
+# pointsTopTen=pointsTopTen %>%
+#   rename("statusBan" = `Total_Bans`)
+
+# pointsTopTen=pointsTopTen %>%
+#   rename(challengeOrigin=`Origin`)
+# 
+# pointsTopTen=pointsTopTen %>%
+#   mutate(statusBan = as.factor(statusBan),
+#          challengeOrigin = as.factor(challengeOrigin))
+# 
+# pointsTopTen=pointsTopTen %>%
+#   group_by(State) %>%
+#   add_count(statusBan)
+# 
+# pointsTopTen=pointsTopTen %>%
+#   rename(statusCount=n)
+# 
+# pointsTopTen=pointsTopTen %>%
+#   group_by(State) %>%
+#   add_count(challengeOrigin)
+# 
+# pointsTopTen=pointsTopTen %>%
+#   rename(originCount=n)
+
+pointsTopTen %>%
+  filter(State=="Oklahoma")
+```
+# Barbell Plot Top 10 
+```{r}
+book_plot2=ggplot(pointsTopTen, aes(x=Total_Bans, y=reorder(State, Total_Bans))) +
+  geom_point(aes(
+    color=Year, 
+    text = paste0(
+      "State: ", State,
+      "<br>", 
+      "Number of Bans: ", Total_Bans,
+      "<br>", 
+      "Most Banned Title: ", Title,
+      "<br>", 
+      "Occurrences: ", Title_Count
+    )), 
+    size = 5) +
+  geom_line() +
+  theme_minimal(base_size=11) +
+  theme(panel.grid.major.y = element_blank(), panel.grid.major.x = element_line(color="lightgray"), panel.grid.minor.x = element_blank(), plot.caption = element_text(hjust = -0.2), text=element_text(family = "Times")) +
+  scale_color_manual(name = "School Year", labels = c("2021-2022", "2022-2023"), values = c("#8E133B", "#F5D075")) +
+  scale_x_continuous(breaks = c(0,250,500,750,1000,1250,1500), labels = c("0","250","500","750","1000","1250","1500")) +
+  labs(title = "Book bans on the rise", subtitle = "Top ten states with the most bans", y = "", x = "Number of Bans", caption = "Data from PEN America")
+
+book_plot2
+```
+```{r}
+ggsave("FinalBarBellBan.pdf")
+```
+
+# Interactive
+```{r}
+book_plot3<-ggplotly(book_plot2, tooltip = "text") %>%
+    layout(title = list(text = paste0('Book bans on the rise',
+                                    '<br>',
+                                    '<sup>',
+                                    'Top ten states with the most bans',
+                                    '</sup>')),
+         annotations = list(x = 1.18, y = 1.1, text = "Data from PEN America",
+                            xref='paper', yref='paper', showarrow = F,
+                            xanchor='right', yanchor='auto', xshift=0, yshift=0,
+                            font = list(size = 10)))
+```
+#API Key
+```{r}
+Sys.setenv("plotly_username"="aholland")
+Sys.setenv("plotly_api_key"="JeZZ20rRgVk8k7va2h9X")
+api_create(book_plot3, filename = "US2223BookBanChange")
+```
+
+# Table
+```{r}
+ds%>%
+  group_by(Title) %>%
+  summarise(Frequency = n()) %>%
+  arrange(desc(Frequency)) %>%
+  head(10)%>%
+  ggplot(aes(reorder(Title, Frequency), Frequency, fill = Title))+
+  geom_col()+
+    theme_minimal(base_size=12)+
+  theme(
+    text=element_text(family = "Times"), 
+    legend.position = "none", 
+  #  plot.title = element_text(hjust = -1),
+ #   plot.subtitle = element_text(hjust = -.5)
+    )+
+  labs(
+    title = "Top 10 Banned Books in the United States",
+    subtitle = "(July 2021 to June 2023)",
+    x = "", 
+    y = "", 
+    caption = "Data from PEN America")+
+  scale_fill_discrete_sequential("Heat")+
+  coord_flip()
+```
+
